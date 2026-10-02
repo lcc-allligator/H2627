@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f7b6c">
+<meta name="theme-color" content="#0a0f0e">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Habits">
@@ -183,6 +183,43 @@ th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
 .catrow .cb i{display:block;height:100%;border-radius:99px}
 .catrow b{width:44px;text-align:right;font-variant-numeric:tabular-nums}
 .snap{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+/* plan tab */
+.rail{list-style:none;margin:0;padding:0}
+.prow{display:grid;grid-template-columns:76px 44px minmax(0,1fr);column-gap:6px;position:relative;padding:4px 0}
+.prow::before{content:"";position:absolute;left:103px;top:0;bottom:0;width:2px;background:var(--line)}
+.prow:first-child::before{top:26px}
+.prow:last-child::before{bottom:auto;height:26px}
+.ptime{padding-top:11px;font-size:13px;font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.ptime input{width:60px;padding:2px 0;border:0;border-bottom:1px dashed var(--line);border-radius:0;background:transparent;font-size:13px;font-weight:600;color:inherit}
+.prow.now .ptime{color:var(--accent)}
+.pmark{display:grid;place-items:center;height:44px;position:relative;z-index:1}
+.pdot{width:10px;height:10px;border-radius:50%;background:var(--line);border:2px solid var(--bg);box-sizing:content-box}
+.pchk{width:30px;height:30px;border-radius:50%;border:2px solid var(--muted);background:var(--bg);display:grid;place-items:center;font-size:15px;font-weight:800;color:transparent}
+.prow.now .pchk{border-color:var(--accent)}
+.prow.done .pchk{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.prow.min .pchk{background:var(--amber);border-color:var(--amber);color:#1b1300}
+.pchk:disabled{opacity:.5}
+.pchk.pop{animation:pop .3s ease-out}
+.pbody{padding-top:9px;min-width:0}
+.p1{font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.p2{font-size:13px;color:var(--muted);margin-top:1px}
+.pmin{font-size:13px;color:var(--accent);font-weight:600;margin-top:1px}
+.prow.done .p1{color:var(--muted)}
+.prow.anchor .p1{font-weight:500;color:var(--muted)}
+.prow.dim{opacity:.55}
+.pctl{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 6px}
+.pctl .seg{flex:1;min-width:210px}
+.prain{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);margin:0}
+.prain input{width:18px;height:18px;padding:0;accent-color:var(--accent)}
+.psum .ptop{display:flex;justify-content:space-between;align-items:center}
+.pedit{display:flex;justify-content:flex-end;margin:0 0 8px}
+.prow.edit .pchk.eye{color:var(--muted);font-size:14px;border-color:var(--line)}
+.prow.edit.hid{opacity:.5}
+.ptitle{width:100%;padding:6px 8px;font-weight:600;font-size:15px;border-radius:10px}
+.pstart{display:flex;align-items:center;gap:8px;margin:6px 0 0;font-size:12px;color:var(--muted);font-weight:600}
+.pstart input{width:auto;padding:5px 8px;font-size:13px;border-radius:9px}
+.pmv{display:flex;gap:6px;align-items:center;margin-top:5px}
+.pmv button{width:36px;height:28px;border-radius:9px;background:var(--card2);border:1px solid var(--line);font-size:12px}
 </style>
 </head>
 <body>
@@ -207,7 +244,7 @@ th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06
      habitTracker.corrupt.<time> and never overwritten.
    ===================================================================== */
 var KEY='habitTracker.v1';           // do not rename
-var SCHEMA=2;                        // bump when the data shape changes
+var SCHEMA=4;                        // bump when the data shape changes
 var SNAP='habitTracker.snap.';
 var PRE='habitTracker.prerestore';
 
@@ -257,7 +294,7 @@ function seed(){
     mk({name:'Sunday review',icon:'📋',cat:'Mind',type:'weekly',slot:'anytime',target:1,cue:'Sunday → review the week + budget check-in'})
   ];
 }
-function fresh(){return {v:SCHEMA,habits:seed(),entries:{},challenges:[],shipRanges:[],settings:{sheetUrl:'',token:'',lastSync:null,dirty:false,theme:'auto',dayStart:3}}}
+function fresh(){return {v:SCHEMA,habits:seed(),entries:{},challenges:[],shipRanges:[],settings:{sheetUrl:'',token:'',lastSync:null,dirty:false,theme:'dark',dayStart:3}}}
 
 // Idempotent and non-destructive: adds/renames fields only. Unknown fields are kept.
 function migrate(s){
@@ -295,7 +332,9 @@ function migrate(s){
     if(!c.kind)c.kind='do';
     if(!c.icon)c.icon='🏁';
   });
-  s.settings=Object.assign({sheetUrl:'',token:'',lastSync:null,dirty:false,theme:'auto',dayStart:3},s.settings||{});
+  if(s.plan&&typeof s.plan==='object'){if(!s.plan.times||typeof s.plan.times!=='object')s.plan.times={};if(!s.plan.titles||typeof s.plan.titles!=='object')s.plan.titles={};if(!s.plan.hidden||typeof s.plan.hidden!=='object')s.plan.hidden={};if(!s.plan.starts||typeof s.plan.starts!=='object')s.plan.starts={};if(!Array.isArray(s.plan.order))s.plan.order=[];if(!Array.isArray(s.plan.custom))s.plan.custom=[];if(!s.plan.start)s.plan.start='2026-10-05'}else if(s.plan)delete s.plan;
+  s.settings=Object.assign({sheetUrl:'',token:'',lastSync:null,dirty:false,theme:'dark',dayStart:3},s.settings||{});
+  if(from<4&&s.settings.theme==='auto')s.settings.theme='dark';   // dark by default; Light/Auto still available in Settings
   if(!s.v||s.v<SCHEMA)s.v=SCHEMA;   // a newer schema number is left as it is
   return s;
 }
@@ -339,7 +378,7 @@ function daySnapshot(){
 var LOADED=load();
 var S=LOADED.state;
 DAYSTART=Number(S.settings.dayStart)||0;
-var TAB='today';
+var TAB=(S.plan?'plan':'today');
 var sel=today(),lastT=sel;
 var syncTimer=null,syncBusy=false,syncErr='',popId=null;
 var FORM={kind:'daily',slot:'morning',hid:null,cid:null,isNew:true};
@@ -514,20 +553,21 @@ function syncLabel(){
 }
 function render(){
   var app=$('#app');
-  var titles={today:greeting(),challenges:'Challenges',stats:'Stats',habits:'Manage'};
-  var sub=TAB==='today'?fmtDay(today())+' · '+syncLabel():syncLabel();
+  var titles={plan:'Plan',today:greeting(),challenges:'Challenges',stats:'Stats',habits:'Manage'};
+  var sub=TAB==='plan'&&S.plan?fmtDay(today())+' · Week '+planWeek(today())+' · '+syncLabel():TAB==='today'?fmtDay(today())+' · '+syncLabel():syncLabel();
   var head='<div class="top"><div><h1>'+esc(titles[TAB])+'</h1><div class="sub">'+esc(sub)+'</div></div>'+
     '<div class="hdr-actions"><button class="chip'+(isShip()?' ship':'')+'" data-a="mode">'+(isShip()?'🚢 Ship':'🏠 Home')+'</button>'+
     '<button class="iconbtn" data-a="theme" aria-label="Switch light or dark theme">'+(effectiveDark()?'☀️':'🌙')+'</button>'+
     '<button class="iconbtn" data-a="settings" aria-label="Settings">⚙️</button></div></div>';
   var body='';
-  if(TAB==='today')body=viewToday();
+  if(TAB==='plan')body=viewPlan();
+  else if(TAB==='today')body=viewToday();
   else if(TAB==='challenges')body=viewChallenges();
   else if(TAB==='stats')body=viewStats();
   else body=viewManage();
-  var fab=TAB==='stats'?'':'<button class="fab" data-a="'+(TAB==='challenges'?'newch':'addhabit')+'" aria-label="Add">＋</button>';
+  var fab=(TAB==='stats'||TAB==='plan')?'':'<button class="fab" data-a="'+(TAB==='challenges'?'newch':'addhabit')+'" aria-label="Add">＋</button>';
   app.innerHTML=head+body+fab;
-  var tabs=[['today','✅','Today'],['challenges','🏁','Challenges'],['stats','📊','Stats'],['habits','🧩','Manage']];
+  var tabs=[['plan','⏱️','Plan'],['today','✅','Today'],['challenges','🏁','Challenges'],['stats','📊','Stats'],['habits','🧩','Manage']];
   $('#tabbar').innerHTML=tabs.map(function(t){return '<button class="'+(TAB===t[0]?'on':'')+'" data-a="tab" data-t="'+t[0]+'"><span>'+t[1]+'</span>'+t[2]+'</button>'}).join('');
   popId=null;
 }
@@ -600,7 +640,7 @@ function viewToday(){
   if(sel!==t)h+='<div class="pastbanner">Logging for <b>'+esc(fmtDay(sel))+'</b> — tap the date to jump back to today.</div>';
   var daily=S.habits.filter(function(x){return x.type==='daily'&&x.state==='active'});
   var shown=[],paused=[];
-  daily.forEach(function(x){var st=status(x,sel);if(st==='pause'&&x.ship==='off')paused.push(x);else shown.push(x)});
+  daily.forEach(function(x){var st=status(x,sel);if(x.pid&&st==='na'&&!val(x,sel))return;if(st==='pause'&&x.ship==='off')paused.push(x);else shown.push(x)});
   var acts=S.challenges.filter(function(c){return c.status==='active'});
   var secs=SLOTS.map(function(s){
     return {slot:s,hs:shown.filter(function(x){return slotOf(x)===s}),cs:acts.filter(function(c){return slotOf(c)===s})};
@@ -633,6 +673,190 @@ function viewToday(){
   if(grads.length)h+='<details><summary>🎓 Maintenance ('+grads.length+')</summary>'+grads.map(function(x){return x.type==='daily'?dailyRow(x):weeklyRow(x)}).join('')+'</details>';
   if(paused.length)h+='<details><summary>🚢 Paused in ship mode ('+paused.length+')</summary>'+paused.map(function(x){return '<div class="card hrow muted"><div class="tick" style="--cat:'+(CAT_RGB[x.cat]||CAT_RGB.Other)+'">'+esc(x.icon)+'</div><div class="hbody"><div class="hname">'+esc(x.name)+'</div><div class="cue">Paused — your streak is safe</div></div></div>'}).join('')+'</details>';
   return h;
+}
+
+/* ---------- daily plan (Plan tab) ---------- */
+var PLAN_START='2026-10-05';          // Monday of week 1 (editable on the Plan tab)
+var PWORK={1:'Push',2:'Pull',3:'Legs',4:'Run (treadmill)',5:'Full body'};
+var PM={mode:'full',rain:false,edit:false};      // screen state only, never saved
+var PLAN_META={
+  wake:{name:'Wake, water, gym clothes',icon:'⏰',cat:'Mind',ship:'on',skip:[]},
+  bfast:{name:'Healthy breakfast',icon:'🥗',cat:'Body',ship:'on',skip:[0,6]},
+  ride:{name:'Morning daylight (bike ride)',icon:'🚴',cat:'Body',ship:'off',skip:[0,6]},
+  coffee:{name:'Coffee at home, leave by 8:06',icon:'☕',cat:'Other',ship:'off',skip:[0,6]},
+  gym:{name:'Gym',icon:'🏋️',cat:'Body',ship:'optional',skip:[0,6]},
+  med:{name:'2-minute meditation',icon:'🧘',cat:'Mind',ship:'on',skip:[0,6]},
+  warm:{name:'Warm-up and wrist mobility',icon:'🎸',cat:'Music',ship:'on',skip:[0,6]},
+  deep:{name:'Deep practice and log',icon:'🎸',cat:'Music',ship:'on',skip:[0,6]},
+  write:{name:'Writing slot',icon:'✍️',cat:'Music',ship:'on',skip:[0,2,4,6]},
+  lunch:{name:'Lunch walk',icon:'🚶',cat:'Body',ship:'off',skip:[0,6]},
+  dinner:{name:'Dinner done by 18:30',icon:'🍽️',cat:'Body',ship:'on',skip:[0,6]},
+  pdw:{name:'Post-dinner walk or squats',icon:'🦵',cat:'Body',ship:'off',skip:[0,6]},
+  fam:{name:'Family walk or ride',icon:'👨‍👩‍👧',cat:'Family',ship:'off',skip:[1,2,3,4,5]},
+  wkrev:{name:'Weekly review',icon:'📋',cat:'Mind',ship:'on',skip:[1,2,3,4,5,6]},
+  shut:{name:'Evening shutdown',icon:'🌙',cat:'Mind',ship:'on',skip:[]},
+  bed:{name:'Lights out by 22:00',icon:'😴',cat:'Mind',ship:'on',skip:[]}
+};
+var PLAN_LINK={deep:'Guitar practice',lunch:'Lunch treadmill walk',pdw:'Post-dinner squats',shut:'Wind-down'};
+function planWeek(date){var d=diffDays(date,S.plan.start);return d<0?1:Math.floor(d/7)+1}
+function stepStart(it){return (S.plan.starts&&S.plan.starts[it.id])||phaseDate(it.from)}
+function stepOn(it,date,w){return S.plan.starts&&S.plan.starts[it.id]?date>=S.plan.starts[it.id]:it.from<=w}
+function phaseDate(from){return addDays(S.plan.start,((from||1)-1)*7)}
+function shortDate(d){return parse(d).toLocaleDateString(undefined,{day:'numeric',month:'short'})}
+function slotFromTime(t){var hr=parseInt(t,10);return hr<12?'morning':hr<17?'afternoon':hr<21?'evening':'night'}
+function pmins(t){var m=/^(\d{1,2}):(\d{2})/.exec(String(t||''));return m?(+m[1])*60+(+m[2]):null}
+function planItems(date,w){
+  var d=dow(date),wd=d>=1&&d<=5,A=[];
+  function H(id,time,title,note,min,from){A.push({id:id,time:time,type:'h',title:title,note:note,min:min,from:from})}
+  function N(id,time,title,note){A.push({id:id,time:time,type:'a',title:title,note:note})}
+  var shutNote=w>=3?'Full version: dim lights, stretches, shower, A/B/C list, gratitude, reading.':'Minimum: phone out, A/B/C list, clothes out.';
+  if(wd){
+    H('wake','06:30','Wake, water, gym clothes on','Clothes laid out the night before','Wake time still holds',1);
+    H('bfast','06:45','Breakfast','One of 2-3 fixed options from the batch-cook system, no added sugar','Same',1);
+    N('drop','08:00','School drop-off','Gym bag already by the door');
+    if(PM.rain)H('ride','08:00','Walk outside with an umbrella','10 minutes, for the daylight','Step outside for 5 minutes',2);
+    else H('ride','08:00','Bike ride, 5 min','Easy pace, in daylight','Step outside for 5 minutes',2);
+    H('coffee','08:05','Coffee at home','None after 2pm. Leave for the gym by 8:06, coffee finished or not','Same',2);
+    N('walkg','08:06','Walk to the gym','5 minutes');
+    H('gym','08:15','Gym: '+PWORK[d],d===4?'About 70 min. Keep the run easy and conversational at first.':'About 70 min','20 minutes, first two exercises',1);
+    N('walkh','09:25','Walk home, shower','');
+    H('med','09:50','2-minute meditation','Guitar on your lap, timer set, slow breathing','Same, it is already tiny',3);
+    H('warm','10:00','Warm-up and wrist mobility','Phone in another room','10 minutes',1);
+    H('deep','10:10','Deep practice, then log one line','Build toward 60 min. Log: what, tempo, first thing tomorrow','15 minutes plus the log line',2);
+    if(d===1||d===3||d===5)H('write','11:35','Writing slot','Improvise and record ideas on your phone','Record one idea',4);
+    H('lunch','12:00','Lunch, then a 10-15 min walk','The treadmill is fine','5 minutes',2);
+    N('flex','13:00','Flex block','Admin, teaching prep, or the weekly social slot, until '+(d===1||d===5?'15:00':'16:00')+(d===3?'. Wednesday: batch cook.':''));
+    N('kids',d===1||d===5?'15:00':'16:00','Kids home, family time','');
+    N('teach','17:00','Teaching','On teaching days');
+    H('dinner','17:30','Dinner done by about 18:30','Portuguese with the kids. Kitchen closed about 19:00','Same',1);
+    H('pdw','19:00','10-minute walk or squats','After dinner','5 minutes',4);
+  }else{
+    H('wake','06:30','Wake within 30 minutes of 06:30','Water first','Same',1);
+    H('fam','09:00','Family walk or ride','Counts as your daylight','Same',1);
+    if(d===0){
+      N('cook','13:00','Batch cook','Sunday and Wednesday');
+      H('wkrev','20:00','Weekly review, 15 minutes','Count first, then change one thing','Same',1);
+    }
+  }
+  H('shut','21:00','Evening shutdown',shutNote,'Phone out, A/B/C list, clothes out',1);
+  H('bed','22:00','Lights out','Hard stop 22:30. A few pages of a book first, from week 3','Same',1);
+  return A;
+}
+function planHab(id){
+  if(id.charAt(0)==='x'&&id.charAt(1)==='_')return hab(id.slice(2))||null;
+  return S.habits.filter(function(h){return h.pid===id})[0]||null}
+// The day's steps after the user's edits: custom steps added, titles renamed, order applied. Hidden steps are flagged.
+function planMaster(){
+  var base=planItems('2026-10-05',4).map(function(i){return i.id}),ids=[];
+  var wk=['fam','cook','wkrev'];
+  base.forEach(function(id){if(id==='shut'){wk.forEach(function(w){if(ids.indexOf(w)<0)ids.push(w)});S.plan.custom.forEach(function(c){ids.push('x_'+c.hid)})}if(ids.indexOf(id)<0)ids.push(id)});
+  var o=S.plan.order,out=[];
+  o.forEach(function(id){if(ids.indexOf(id)>=0&&out.indexOf(id)<0)out.push(id)});
+  if(!o.length)return ids;
+  ids.forEach(function(id){if(out.indexOf(id)<0){var k=out.indexOf('shut');if(k<0)out.push(id);else out.splice(k,0,id)}});
+  return out;
+}
+function planDay(date,w){
+  var A=planItems(date,w);
+  S.plan.custom.forEach(function(c){
+    var h=hab(c.hid);if(!h)return;
+    A.push({id:'x_'+c.hid,time:c.time||'12:00',type:'h',title:h.name,note:h.cue||'',min:h.min||'Same',from:1,custom:true});
+  });
+  var m=planMaster();
+  A.forEach(function(it,i){it._i=i;if(S.plan.titles[it.id])it.title=S.plan.titles[it.id];it.hidden=!!S.plan.hidden[it.id]});
+  A.sort(function(a,b){var x=m.indexOf(a.id),y=m.indexOf(b.id);return x-y||a._i-b._i});
+  return A;
+}
+function planTime(it){return (S.plan.times&&S.plan.times[it.id])||it.time}
+function planRow(it,date,w,nowId){
+  var t=planTime(it),isNow=nowId===it.id;
+  if(it.type==='a'){
+    return '<li class="prow anchor'+(isNow?' now':'')+'"><div class="ptime">'+esc(t)+'</div><div class="pmark"><i class="pdot"></i></div><div class="pbody"><div class="p1">'+esc(it.title)+(isNow?'<span class="tag now">now</span>':'')+'</div>'+(it.note?'<div class="p2">'+esc(it.note)+'</div>':'')+'</div></li>';
+  }
+  var hb=planHab(it.id),v=hb?val(hb,date):0;
+  var dim=!v&&!stepOn(it,date,w);
+  var cls='prow'+(v===1?' done':v===2?' min':'')+(dim?' dim':'')+(isNow?' now':'');
+  var tag=dim?'<span class="tag">starts '+esc(shortDate(stepStart(it)))+'</span>':!hb?'<span class="tag warn">not linked</span>':hb.state==='archived'?'<span class="tag">archived</span>':(isNow?'<span class="tag now">now</span>':'');
+  var st=hb?status(hb,date):'due';
+  if(hb&&!dim&&st==='skip')tag='<span class="tag">rest day</span>';
+  if(hb&&!dim&&st==='pause'&&hb.ship!=='on')tag='<span class="tag warn">paused on ship</span>';
+  var sub=PM.mode==='min'?'<div class="pmin">Minimum: '+esc(it.min)+'</div>':(it.note?'<div class="p2">'+esc(it.note)+'</div>':'');
+  var can=hb&&hb.state!=='archived'&&!dim;
+  return '<li class="'+cls+'"><div class="ptime"><input type="text" inputmode="numeric" maxlength="5" size="5" data-pid="'+esc(it.id)+'" value="'+esc(t)+'" aria-label="Time for '+esc(it.title)+'"></div>'+
+    '<div class="pmark"><button class="pchk'+(popId&&hb&&popId===hb.id?' pop':'')+'" data-a="ptick"'+(hb?' data-id="'+hb.id+'"':'')+(can?'':' disabled')+' aria-pressed="'+(v?'true':'false')+'" aria-label="'+esc(it.title)+'">'+(v===1?'✓':v===2?'½':'')+'</button></div>'+
+    '<div class="pbody"><div class="p1">'+esc(it.title)+tag+'</div>'+sub+'</div></li>';
+}
+function planEditRow(it){
+  var t=planTime(it);
+  return '<li class="prow edit'+(it.hidden?' hid':'')+'"><div class="ptime"><input type="text" inputmode="numeric" maxlength="5" size="5" data-pid="'+esc(it.id)+'" value="'+esc(t)+'" aria-label="Time"></div>'+
+    '<div class="pmark"><button class="pchk eye" data-a="phide" data-id="'+esc(it.id)+'" aria-label="'+(it.hidden?'Show':'Hide')+' '+esc(it.title)+'">'+(it.hidden?'＋':'✕')+'</button></div>'+
+    '<div class="pbody"><input class="ptitle" data-ptitle="'+esc(it.id)+'" value="'+esc(it.title)+'" aria-label="Name">'+
+    (it.type==='h'?'<label class="pstart">Starts <input type="date" data-pstart="'+esc(it.id)+'" value="'+esc(stepStart(it))+'"></label>':'')+'<div class="pmv"><button data-a="pmove" data-id="'+esc(it.id)+'" data-d="-1" aria-label="Move up">▲</button><button data-a="pmove" data-id="'+esc(it.id)+'" data-d="1" aria-label="Move down">▼</button>'+(it.hidden?'<span class="tag">hidden</span>':it.type==='a'?'<span class="tag">note</span>':'')+'</div></div></li>';
+}
+function viewPlanEdit(h,A){
+  h+='<div class="card"><b>Edit your plan</b><div class="sub" style="margin-top:4px">Tap a time or a name to change it. ▲▼ moves a step. ✕ hides it from the plan (the habit stays in Today; archive it in Manage to remove it completely).</div></div>';
+  h+='<ol class="rail">'+A.map(planEditRow).join('')+'</ol>';
+  var inPlan={};S.plan.custom.forEach(function(c){inPlan[c.hid]=1});
+  var avail=S.habits.filter(function(x){return x.type==='daily'&&x.state==='active'&&!x.pid&&!inPlan[x.id]});
+  h+='<div class="card" style="margin-top:14px"><b>Add a habit to the plan</b><div class="sub" style="margin:4px 0 8px">Pick one of your own habits and it joins the timeline at 12:00. Move it and set its time.</div>'+
+    (avail.length?'<div class="chips">'+avail.map(function(x){return '<button type="button" class="chipbtn" data-a="padd" data-id="'+x.id+'">'+esc(x.icon)+' '+esc(x.name)+'</button>'}).join('')+'</div>':'<div class="help">All your daily habits are already in the plan.</div>')+'</div>';
+  h+='<div class="btnrow" style="margin-top:14px"><button class="btn" data-a="pedit">Done</button><button class="btn alt" data-a="preset">Reset order and hidden</button></div>';
+  return h;
+}
+function viewPlan(){
+  var t=today(),h='';
+  if(sel>t)sel=t;
+  var minSel=addDays(t,-60);
+  h+='<div class="daynav"><button data-a="prev"'+(sel<=minSel?' disabled':'')+' aria-label="Previous day">‹</button><button class="lbl" data-a="gotoday">'+esc(dayLabel(sel))+'</button><button data-a="next"'+(sel>=t?' disabled':'')+' aria-label="Next day">›</button></div>';
+  if(!S.plan){
+    return h+'<div class="card"><b>Your daily plan</b><div class="sub" style="margin:6px 0 12px">A timeline of your day with a time for each step, a marker for where you are now, a minimum-day switch, and habits that switch on week by week from Mon 5 Oct. Ticks count in Today, Stats and your Sheet like any other habit.</div>'+
+      '<button class="btn block" data-a="plansetup">Set up my plan</button><div class="help" style="margin-top:8px">Nothing is deleted. Guitar practice, Lunch treadmill walk, Post-dinner squats and Wind-down are linked to their plan steps with their history kept; the other steps are added as new habits.</div></div>';
+  }
+  if(sel!==t)h+='<div class="pastbanner">Logging for <b>'+esc(fmtDay(sel))+'</b> — tap the date to jump back to today.</div>';
+  var w=planWeek(sel),A=planDay(sel,w),nowId=null;
+  if(PM.edit)return viewPlanEdit(h,A);
+  A=A.filter(function(it){return !it.hidden});
+  if(sel===t){
+    var n=new Date(),nm=n.getHours()*60+n.getMinutes();
+    A.forEach(function(it){var m=pmins(planTime(it));if(m!==null&&m<=nm)nowId=it.id});
+  }
+  var due=0,done=0;
+  A.forEach(function(it){
+    if(it.type!=='h'||!stepOn(it,sel,w))return;
+    var hb=planHab(it.id);if(!hb||hb.state==='archived')return;
+    var st=status(hb,sel);
+    if(val(hb,sel)){due++;done++}else if(st==='due')due++;
+  });
+  var missing=A.some(function(it){return it.type==='h'&&!it.custom&&!planHab(it.id)});
+  h+='<div class="pedit"><button class="chip" data-a="pedit">✏️ Edit plan</button></div>';
+  h+='<div class="card psum"><div class="ptop"><b>Week '+w+(w>=4?' · full chain':'')+'</b><span class="wcount">'+done+' of '+due+'</span></div><div class="bar"><i style="width:'+(due?Math.round(100*done/due):0)+'%"></i></div></div>';
+  h+='<div class="pctl"><div class="seg"><button data-a="pmode" data-m="full" class="'+(PM.mode==='full'?'on':'')+'">Full day</button><button data-a="pmode" data-m="min" class="'+(PM.mode==='min'?'on':'')+'">Minimum day</button></div>'+
+     '<label class="prain"><input type="checkbox" id="p-rain"'+(PM.rain?' checked':'')+'> Raining</label></div>';
+  h+='<div class="help" style="margin:0 4px 10px">'+(PM.mode==='min'?'Minimum days are for sickness, injury, or under about 5.5 hours of sleep. Tired does not count. Ticks are logged as ½.':'Full version by default. Tap a time to change it.')+'</div>';
+  h+='<ol class="rail">'+A.map(function(it){return planRow(it,sel,w,nowId)}).join('')+'</ol>';
+  h+='<div class="card" style="margin-top:14px"><b>Plan settings</b><div style="height:2px"></div><label for="p-start">Week 1 starts (a Monday)</label><input type="date" id="p-start" value="'+esc(S.plan.start)+'">'+
+     '<div class="help">Changing this only moves when steps switch on. Your history is not touched.</div>'+
+     (missing?'<button class="btn alt sm" style="margin-top:10px" data-a="plansetup">Re-add missing habits</button>':'')+'</div>';
+  return h;
+}
+function planSetup(){
+  var first=!S.plan;
+  if(first){try{var cur=localStorage.getItem(KEY);if(cur)localStorage.setItem(PRE,cur)}catch(e){}}
+  S.plan=S.plan||{v:1,start:PLAN_START,times:{},titles:{},hidden:{},starts:{},order:[],custom:[]};
+  var all={},linked=[],added=[];
+  ['2026-10-05','2026-10-10','2026-10-11'].forEach(function(d){planItems(d,4).forEach(function(it){if(it.type==='h'&&!all[it.id])all[it.id]=it})});
+  var t=today();
+  Object.keys(all).forEach(function(id){
+    if(planHab(id))return;
+    var it=all[id],m=PLAN_META[id],ex=null;
+    if(PLAN_LINK[id])ex=S.habits.filter(function(x){return x.name===PLAN_LINK[id]&&!x.pid&&x.type==='daily'&&x.state!=='archived'})[0]||null;
+    if(ex){ex.pid=id;linked.push(ex.name);return}
+    var pd=phaseDate(it.from);
+    S.habits.push({id:uid(),pid:id,name:m.name,icon:m.icon,cat:m.cat,slot:slotFromTime(it.time),type:'daily',target:1,cue:it.note||'',min:it.min,ship:m.ship,skipDays:m.skip.slice(),created:pd>t?pd:t,state:'active'});
+    added.push(m.name);
+  });
+  commit();
+  openSheet('<h2>Plan ready</h2><div class="card"><b>'+added.length+' habits added'+(linked.length?', '+linked.length+' linked':'')+'</b><div class="sub">'+(linked.length?'Linked with history kept: '+esc(linked.join(', '))+'. ':'')+'Steps switch on week by week from '+esc(shortDate(S.plan.start))+'. Your other habits are unchanged: pause or archive any you no longer want in Manage.</div></div><button class="btn block" data-a="close">Done</button>');
 }
 
 function viewChallenges(){
@@ -868,7 +1092,7 @@ function exportJson(){
 function adopt(data){
   try{var cur=localStorage.getItem(KEY);if(cur)localStorage.setItem(PRE,cur)}catch(e){}
   var keep=S.settings;
-  var n=migrate({v:data.v||1,habits:data.habits,entries:data.entries,challenges:data.challenges,shipRanges:data.shipRanges,settings:keep});
+  var n=migrate({v:data.v||1,habits:data.habits,entries:data.entries,challenges:data.challenges,shipRanges:data.shipRanges,plan:data.plan,settings:keep});
   S=n;S.settings.dirty=true;persist();scheduleSync();render();
 }
 function importFile(e){
@@ -906,6 +1130,31 @@ var A={
   tick:function(d){var h=hab(d.id);popId=val(h,sel)?null:h.id;setVal(h,sel,val(h,sel)?0:1);buzz();commit()},
   min:function(d){var h=hab(d.id);popId=val(h,sel)===2?null:h.id;setVal(h,sel,val(h,sel)===2?0:2);buzz();commit()},
   wtick:function(d){var h=hab(d.id);popId=val(h,sel)?null:h.id;setVal(h,sel,val(h,sel)?0:1);buzz();commit()},
+  ptick:function(d){var h=hab(d.id);if(!h)return;var cur=val(h,sel);popId=cur?null:h.id;setVal(h,sel,cur?0:(PM.mode==='min'?2:1));buzz();commit()},
+  pmode:function(d){PM.mode=d.m;render()},
+  plansetup:planSetup,
+  pedit:function(){PM.edit=!PM.edit;if(PM.edit&&!S.plan.order.length){S.plan.order=planMaster();persist()}render();window.scrollTo(0,0)},
+  phide:function(d){
+    var id=d.id,P=S.plan;
+    if(id.slice(0,2)==='x_'){P.custom=P.custom.filter(function(c){return 'x_'+c.hid!==id});P.order=P.order.filter(function(x){return x!==id});delete P.times[id];toast('Removed from the plan')}
+    else if(P.hidden[id]){delete P.hidden[id]}
+    else{P.hidden[id]=1;toast('Hidden from the plan — the habit is still in Today')}
+    commit();
+  },
+  pmove:function(d){
+    var P=S.plan,A=planDay(sel,planWeek(sel)),m=planMaster(),i=A.map(function(x){return x.id}).indexOf(d.id),j=i+Number(d.d);
+    if(i<0||j<0||j>=A.length)return;
+    var a=m.indexOf(A[i].id),b=m.indexOf(A[j].id);
+    var t=m[a];m[a]=m[b];m[b]=t;
+    P.order=m;commit();
+  },
+  padd:function(d){
+    var P=S.plan;if(P.custom.some(function(c){return c.hid===d.id}))return;
+    P.custom.push({hid:d.id,time:'12:00'});toast('Added — set its time and move it into place');commit();
+  },
+  preset:function(){
+    if(confirm('Put the order back, show every hidden step and restore the start dates? Your times and names stay.')){S.plan.order=[];S.plan.hidden={};S.plan.starts={};commit();toast('Order reset')}
+  },
   graduate:function(d){
     var h=hab(d.id);
     if(confirm('Graduate "'+h.name+'"? It moves to the quiet Maintenance list and keeps counting.')){h.state='graduated';commit();toast('Graduated 🎓')}
@@ -977,6 +1226,31 @@ document.addEventListener('click',function(e){
   if(!b)return;
   var fn=A[b.dataset.a];
   if(fn){e.preventDefault();fn(b.dataset)}
+});
+document.addEventListener('change',function(e){
+  var el=e.target;if(!el)return;
+  if(el.id==='p-rain'){PM.rain=el.checked;render();return}
+  if(el.id==='p-start'&&S.plan){if(/^\d{4}-\d{2}-\d{2}$/.test(el.value)){S.plan.start=el.value;commit()}return}
+  if(el.dataset&&el.dataset.pstart&&S.plan){
+    var id=el.dataset.pstart,v=el.value,base=null;
+    planDay(sel,planWeek(sel)).forEach(function(x){if(x.id===id)base=x})
+    if(/^\d{4}-\d{2}-\d{2}$/.test(v)&&base){
+      if(v===phaseDate(base.from))delete S.plan.starts[id];else S.plan.starts[id]=v;
+      var hb=planHab(id);
+      if(hb&&v>hb.created){var early=Object.keys(S.entries).some(function(d){return d<v&&S.entries[d][hb.id]});if(!early)hb.created=v}
+      commit();
+    }
+    return;
+  }
+  if(el.dataset&&el.dataset.ptitle&&S.plan){
+    var nv=el.value.trim();if(nv)S.plan.titles[el.dataset.ptitle]=nv;else delete S.plan.titles[el.dataset.ptitle];
+    commit();return;
+  }
+  if(el.dataset&&el.dataset.pid&&S.plan){
+    var m=/^(\d{1,2})[:.]?(\d{2})$/.exec(el.value.trim());
+    if(m&&+m[1]<24&&+m[2]<60)S.plan.times[el.dataset.pid]=pad(+m[1])+':'+m[2];else delete S.plan.times[el.dataset.pid];
+    commit();
+  }
 });
 window.addEventListener('popstate',function(){if($('#sheet').classList.contains('open'))closeSheet(true)});
 window.addEventListener('online',function(){if(S.settings.dirty)pushNow()});

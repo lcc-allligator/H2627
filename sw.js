@@ -1,6 +1,6 @@
 // Offline cache for the app files. Your logged data is NOT stored here
 // (it lives in the browser's localStorage), so changing this file never touches it.
-const CACHE = 'habits-v3';
+const CACHE = 'habits-v5';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './icon-maskable-192.png', './icon-maskable-512.png',
